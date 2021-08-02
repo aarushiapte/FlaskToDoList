@@ -1,13 +1,26 @@
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from flask_httpauth import HTTPBasicAuth
 
 app = Flask(__name__)
 
-# /// = relative path, //// = absolute path
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+auth = HTTPBasicAuth()
 
+users = {
+    'Aarushi':'aaru10',
+    'Arya' : 'arya18',
+    'Bhavika': 'bhavie7',
+    'Prachiti' : 'prach5'
+}
+
+@auth.verify_password
+def verify_password(username, password):
+    if username in users and users[username] == password:
+        return username
 
 class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -22,6 +35,7 @@ def home():
 
 
 @app.route("/add", methods=["POST"])
+@auth.login_required
 def add():
     title = request.form.get("title")
     new_todo = Todo(title=title, complete=False)
@@ -31,6 +45,7 @@ def add():
 
 
 @app.route("/update/<int:todo_id>")
+@auth.login_required
 def update(todo_id):
     todo = Todo.query.filter_by(id=todo_id).first()
     todo.complete = not todo.complete
@@ -39,6 +54,7 @@ def update(todo_id):
 
 
 @app.route("/delete/<int:todo_id>")
+@auth.login_required
 def delete(todo_id):
     todo = Todo.query.filter_by(id=todo_id).first()
     db.session.delete(todo)
